@@ -51,6 +51,10 @@ if find:    # locate controls by their exact visible name (e.g. a ribbon tab), w
                 while p is not None and len(chain) < 4:
                     pi = p.element_info; chain.append(f"{pi.control_type}#{pi.automation_id or ''}"); p = p.parent()
                 print(line(e) + " | parents=" + " < ".join(chain))
+                if "--children" in args:   # e.g. the report names inside "Recent Reports"
+                    for c in e.descendants():
+                        if c.element_info.control_type not in ("Image", "Thumb", "ScrollBar"):
+                            print("    " + line(c))
     sys.exit(0)
 
 for w in wins:
