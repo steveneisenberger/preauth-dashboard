@@ -70,13 +70,33 @@ if tab is None: fail(f"Reporting tab not found. Window: {main.window_text()!r}. 
 log(f"Found Reporting: {tab.element_info.control_type}#{tab.element_info.automation_id}")
 tab.click_input(); time.sleep(2)
 
-grid = find(main, auto_id="lstRecentReports", control_type="DataGrid", timeout=15)
-if grid is None: fail("Recent Reports list not found")
-row = find(grid, title=REPORT, control_type="Text", timeout=10)
-if row is None: fail(f"'{REPORT}' not in Recent Reports")
-log(f"Selecting {REPORT}"); row.click_input(); time.sleep(1)
-run = wait_enabled(lambda: find(main, auto_id="btnRunRecentReport", timeout=2), 15, "Run button")
-run.invoke(); time.sleep(3)
+reuse = False
+if find(main, auto_id="lstStatuses", control_type="List", timeout=3) is not None:
+    reuse = True
+    log(f"{REPORT} is already open; re-using it (will click View for fresh numbers)")
+else:
+    grid = find(main, auto_id="lstRecentReports", control_type="DataGrid", timeout=15)
+    if grid is None: fail("Recent Reports list not found")
+    row = find(grid, title=REPORT, control_type="Text", timeout=10)
+    if row is None: fail(f"'{REPORT}' not in Recent Reports")
+    log(f"Selecting {REPORT}")
+    run_ok = lambda: (lambda b: b is not None and b.is_enabled())(find(main, auto_id="btnRunRecentReport", timeout=1))
+    item = row
+    for _ in range(4):                                 # walk up from the text to its grid row
+        if item.element_info.control_type == "DataItem": break
+        item = item.parent()
+    try: item.iface_selection_item.Select()           # select the row directly
+    except Exception: pass
+    time.sleep(1)
+    if not run_ok(): row.click_input(); time.sleep(2)  # then try a normal click
+    if run_ok():
+        find(main, auto_id="btnRunRecentReport", timeout=2).invoke()
+    else:
+        log("Run stayed greyed out; double-clicking the report instead")
+        row.double_click_input()
+    if find(main, auto_id="lstStatuses", control_type="List", timeout=30) is None:
+        fail(f"report did not open. Run enabled={run_ok()}. Controls named '{REPORT}': {describe(main, REPORT)}")
+    time.sleep(3)
 
 # ---------- 2. Verify the saved settings (never changes them) ----------
 time.sleep(2)   # settings panel opens; View may be greyed while Run loads the report
@@ -107,8 +127,19 @@ if "all" not in str(office_txt).lower():
 # ---------- 3. Wait for the report to load (Run usually starts it; click View only if it didn't) ----------
 # While Edge is loading, View is greyed out. Loaded = Export becomes clickable.
 # If View stays clickable for 15 s with Export still grey, nothing is loading, so click View once.
+if reuse:
+    # an already-open report may show old numbers: wait until View is clickable, click it, then wait for the new load to start
+    v = wait_enabled(lambda: find(main, auto_id="btnView", timeout=2), 600, "View button on open report")
+    log("Clicking View to refresh"); 
+    try: v.invoke()
+    except Exception: v.click_input()
+    end = time.time() + 60
+    while time.time() < end:
+        eb = find(main, auto_id="btnExport", timeout=2)
+        if eb is not None and not eb.is_enabled(): break
+        time.sleep(1)
 log("Waiting for report to load (up to 10 min)")
-end, idle_since, viewed = time.time() + 600, None, False
+end, idle_since, viewed = time.time() + 600, None, reuse
 export_btn = None
 while time.time() < end:
     eb = find(main, auto_id="btnExport", timeout=2)
