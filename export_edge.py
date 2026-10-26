@@ -13,7 +13,7 @@ WANT = {"MC", "SUB", "APP-MC", "REJ-MC", "(1) MC PH1", "(1) PH1SUB", "(1)PH1 APP
 desk = Desktop(backend="uia")
 
 def log(m): print(f"  [{time.strftime('%H:%M:%S')}] {m}", flush=True)
-def fail(m): log("FAILED: " + m); close_dialogs(); sys.exit(1)
+def fail(m): log("FAILED: " + m); close_dialogs(); os._exit(1)
 
 def edge():
     w = [w for w in desk.windows() if w.window_text().startswith("Ortho2 Edge")]
@@ -56,14 +56,20 @@ def wait_enabled(ctrl_fn, timeout, what):
     fail(f"timed out waiting for {what}")
 
 def close_dialogs():
+    # must never call fail()/edge() (that caused an endless loop when Edge was busy)
     try:
-        for w in pid_windows():
-            if w.window_text() == "Export": w.close()
+        ws = [w for w in desk.windows() if w.window_text().startswith("Ortho2 Edge")]
+        if not ws: return
+        p = ws[0].process_id()
+        for w in desk.windows():
+            if w.process_id() == p and w.window_text() in ("Export", "Browse For Folder", "Select Folder"):
+                try: w.close()
+                except Exception: pass
     except Exception: pass
 
 def _on_crash(t, v, tb):
     import traceback; traceback.print_exception(t, v, tb)
-    close_dialogs(); sys.exit(1)
+    close_dialogs(); os._exit(1)
 sys.excepthook = _on_crash   # any unexpected error still closes Edge's Export window
 
 # ---------- 1. Bring Edge forward, open Reporting > Recent Reports ----------
@@ -246,7 +252,7 @@ if not export_ready():
 if not export_ready():
     log("Using Browse to pick the folder")
     before = {w.handle for w in pid_windows()}
-    find(dlg, auto_id="_exportDirectoryButton", timeout=5).invoke(); time.sleep(3)
+    find(dlg, auto_id="_exportDirectoryButton", timeout=5).click_input(); time.sleep(3)   # click, not invoke: invoke blocks on modal pickers
     picker = next((w for w in pid_windows() if w.handle not in before), None)
     if picker is None: fail("Browse did not open a folder picker")
     log(f"Folder picker: {picker.window_text()!r} class={picker.class_name()}")
