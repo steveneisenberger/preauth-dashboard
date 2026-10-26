@@ -79,7 +79,7 @@ run = wait_enabled(lambda: find(main, auto_id="btnRunRecentReport", timeout=2), 
 run.invoke(); time.sleep(3)
 
 # ---------- 2. Verify the saved settings (never changes them) ----------
-view = wait_enabled(lambda: find(main, auto_id="btnView", timeout=2), 60, "View button")
+time.sleep(2)   # settings panel opens; View may be greyed while Run loads the report
 lst = find(main, auto_id="lstStatuses", control_type="List", timeout=15)
 if lst is None: fail("status list not found")
 checked, seen = set(), set()
