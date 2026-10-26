@@ -104,27 +104,31 @@ log(f"Office: {office_txt!r}")
 if "all" not in str(office_txt).lower():
     fail(f"Office is set to {office_txt!r}, expected All")
 
-# ---------- 3. View (report takes ~2 min) ----------
-log("Clicking View; waiting for report (up to 10 min)")
-# Run may already be rendering the report (View greys out while it does). Keep trying View until it takes.
-clicked, end = False, time.time() + 600
-while not clicked and time.time() < end:
-    v = find(main, auto_id="btnView", timeout=2)
-    if v is not None and v.is_enabled():
-        try: v.invoke(); clicked = True
-        except Exception:
-            try: v.click_input(); clicked = True
-            except Exception: pass
-    if not clicked: time.sleep(2)
-if not clicked: fail("View button never became clickable")
-log("View clicked")
-# if an old report was already showing, wait for Export to grey out (new render started) before waiting for it to come back
-end = time.time() + 30
+# ---------- 3. Wait for the report to load (Run usually starts it; click View only if it didn't) ----------
+# While Edge is loading, View is greyed out. Loaded = Export becomes clickable.
+# If View stays clickable for 15 s with Export still grey, nothing is loading, so click View once.
+log("Waiting for report to load (up to 10 min)")
+end, idle_since, viewed = time.time() + 600, None, False
+export_btn = None
 while time.time() < end:
-    b = find(main, auto_id="btnExport", timeout=2)
-    if b is not None and not b.is_enabled(): break
-    time.sleep(0.5)
-export_btn = wait_enabled(lambda: find(main, auto_id="btnExport", timeout=2), 600, "report to finish loading")
+    eb = find(main, auto_id="btnExport", timeout=2)
+    if eb is not None and eb.is_enabled():
+        export_btn = eb; break
+    v = find(main, auto_id="btnView", timeout=2)
+    if v is not None and v.is_enabled() and not viewed:
+        idle_since = idle_since or time.time()
+        if time.time() - idle_since >= 15:
+            log("Report not loading on its own; clicking View")
+            try: v.invoke()
+            except Exception:
+                try: v.click_input()
+                except Exception: pass
+            viewed, idle_since = True, None
+    else:
+        idle_since = None
+    time.sleep(2)
+if export_btn is None: fail("report did not finish loading within 10 min")
+log("Report loaded")
 time.sleep(5)
 
 # ---------- 4. Export > PDF ----------
