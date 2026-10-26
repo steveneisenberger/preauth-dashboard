@@ -1,7 +1,7 @@
 # Pre-Auth Tracker - ON-DEMAND run on Benny-PC (no schedule)
 # Started from the "Update Pre-Auth Dashboard" desktop shortcut.
 # Pauses Rob -> exports report from Edge -> counts -> deletes PDF -> resumes Rob -> publishes counts-only page
-param([string]$RobTask = "Rob")
+param([string]$RobTask = "Rob", [switch]$NoPublish)
 
 $ErrorActionPreference = "Stop"
 $root = "C:\PreauthTracker"
@@ -45,10 +45,13 @@ catch { Write-Host "ERROR: $_" -ForegroundColor Red }
 finally {
     # 4. Always delete the PHI PDF and turn Rob back on, even if a step failed
     if (Test-Path $pdf) { Remove-Item $pdf -Force; Write-Host "PDF deleted." }
+    Get-ChildItem "$(Split-Path $pdf)\tmp" -File -ErrorAction SilentlyContinue | Remove-Item -Force
     Enable-ScheduledTask -TaskName $RobTask | Out-Null
     Write-Host "Rob resumed."
 }
 if (-not $ok) { Finish "Update FAILED. Rob is back on. Nothing was published. Details: $root\logs\$date.log" "Red" }
+
+if ($NoPublish) { Finish "Test run OK: counts saved to $json (not published)." "Green" }
 
 # 5. Rebuild, encrypt, push (Rob is already back on)
 try { & "$root\publish.ps1" } catch { Finish "Counts saved, but publishing failed: $_" "Red" }
