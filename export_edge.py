@@ -62,7 +62,7 @@ def close_dialogs():
         if not ws: return
         p = ws[0].process_id()
         for w in desk.windows():
-            if w.process_id() == p and w.window_text() in ("Export", "Browse For Folder", "Select Folder"):
+            if w.process_id() == p and w.window_text() in ("Save As", "Export", "Browse For Folder", "Select Folder"):
                 try: w.close()
                 except Exception: pass
     except Exception: pass
@@ -234,48 +234,43 @@ if box is None: fail("export folder box not found")
 def export_ready():
     b = find(dlg, auto_id="_exportButton", timeout=1); return b is not None and b.is_enabled()
 
-def wm_settext(ctrl, text):
-    import ctypes
-    h = ctrl.element_info.handle
-    if not h: return False
-    ctypes.windll.user32.SendMessageW(h, 0x000C, 0, ctypes.c_wchar_p(text))   # WM_SETTEXT (also fires EN_CHANGE)
-    return True
-
-# Way 1: set the box directly. Way 2: WM_SETTEXT (works on read-only WinForms boxes). Way 3: Browse dialog.
-try: box.set_edit_text(TMP)
-except Exception as ex: log(f"(folder box is read-only: {ex.__class__.__name__}; trying direct set)")
+# Edge's folder box is read-only; Browse opens a standard Windows "Save As" window.
+# Type the full file path into its File name box and click Save; Edge then fills the folder box.
+target = os.path.join(TMP, "preauth.pdf")
+log("Browse > Save As")
+before = {w.handle for w in pid_windows()}
+find(dlg, auto_id="_exportDirectoryButton", timeout=5).click_input()   # click, not invoke: invoke blocks on modal windows
+saveas, end = None, time.time() + 20
+while saveas is None and time.time() < end:
+    time.sleep(1)
+    saveas = next((w for w in pid_windows() if w.handle not in before and w.window_text() == "Save As"), None)
+    if saveas is None:   # common dialogs are sometimes owned by another process; fall back to any new "Save As"
+        saveas = next((w for w in desk.windows() if w.window_text() == "Save As"), None)
+if saveas is None: fail("Save As window did not open after Browse")
+name_box = next((e for e in saveas.descendants() if e.element_info.control_type == "Edit"
+                 and (e.element_info.automation_id or "") == "1001"), None)
+if name_box is None:
+    name_box = next((e for e in saveas.descendants() if e.element_info.control_type == "Edit"
+                     and "file name" in (e.element_info.name or "").lower()), None)
+if name_box is None: saveas.close(); fail("File name box not found in Save As")
+try: name_box.set_edit_text(target)
+except Exception:
+    name_box.click_input(); send_keys("^a{BACKSPACE}"); send_keys(target, with_spaces=True)
 time.sleep(1)
-if not export_ready():
-    try: wm_settext(box, TMP)
-    except Exception as ex: log(f"(direct set failed: {ex})")
-    time.sleep(1)
-if not export_ready():
-    log("Using Browse to pick the folder")
-    before = {w.handle for w in pid_windows()}
-    find(dlg, auto_id="_exportDirectoryButton", timeout=5).click_input(); time.sleep(3)   # click, not invoke: invoke blocks on modal pickers
-    picker = next((w for w in pid_windows() if w.handle not in before), None)
-    if picker is None: fail("Browse did not open a folder picker")
-    log(f"Folder picker: {picker.window_text()!r} class={picker.class_name()}")
-    edits_ = [e for e in picker.descendants() if e.element_info.control_type == "Edit"]
-    if not edits_:
-        types_ = sorted({e.element_info.control_type for e in picker.descendants()})
-        picker.close()
-        fail(f"folder picker has no folder box (types: {types_})")
-    fld = edits_[-1]
-    try: fld.set_edit_text(TMP)
-    except Exception:
-        fld.click_input(); send_keys("^a"); send_keys(TMP, with_spaces=True)
-    time.sleep(1)
-    okb = next((e for e in picker.descendants() if e.element_info.control_type == "Button"
-                and (e.element_info.name or "").replace("&", "").strip().lower() in ("ok", "select folder")), None)
-    if okb is not None: okb.invoke()
-    else: send_keys("{ENTER}")
-    time.sleep(2)
+save_btn = next((e for e in saveas.descendants() if e.element_info.control_type == "Button"
+                 and (e.element_info.automation_id or "") == "1"), None)
+if save_btn is not None: save_btn.click_input()
+else: name_box.click_input(); send_keys("{ENTER}")
+end = time.time() + 15
+while time.time() < end and any(w.window_text() == "Save As" for w in pid_windows()): time.sleep(0.5)
+if any(w.window_text() == "Save As" for w in pid_windows()):
+    fail("Save As did not close (path rejected?)")
+time.sleep(1)
 v_ = box.legacy_properties().get("Value", "") if box else ""
 log(f"Export folder box now: {v_!r}")
 go = wait_enabled(lambda: find(dlg, auto_id="_exportButton", timeout=2), 15, "Export button in dialog")
 log(f"Exporting to {TMP}")
-go.invoke()
+go.click_input()   # click, not invoke: the export runs while Edge shows a busy window
 
 # ---------- 5. Wait for the PDF to finish writing ----------
 end, last = time.time() + 900, -1
