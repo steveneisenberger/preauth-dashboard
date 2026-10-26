@@ -14,6 +14,7 @@ trees = "--trees" in args
 under = args[args.index("--under") + 1] if "--under" in args else None
 menus = "--menus" in args
 edits = "--edits" in args
+find = args[args.index("--find") + 1] if "--find" in args else None
 KEEP = {"Button", "MenuItem", "TabItem", "ComboBox", "CheckBox", "RadioButton", "Hyperlink", "SplitButton", "Menu", "ToolBar"}
 NEVER = {"DataItem", "ListItem", "Text", "Edit", "Document", "DataGrid", "Table", "TreeItem", "Image",
          "ScrollBar", "Thumb", "Header", "HeaderItem", "List", "Tree", "ToolTip", "StatusBar"}
@@ -41,6 +42,16 @@ if menus:   # any open drop-down menu anywhere on screen (menu item names only)
     for w in desk.windows():
         for e in w.descendants(control_type="MenuItem"):
             print(f"[{w.window_text()[:30]} | pid={w.process_id()}] " + line(e))
+
+if find:    # locate controls by their exact visible name (e.g. a ribbon tab), with parent chain
+    for w in wins:
+        for e in w.descendants():
+            if (e.element_info.name or "").strip().lower() == find.lower():
+                chain, p = [], e.parent()
+                while p is not None and len(chain) < 4:
+                    pi = p.element_info; chain.append(f"{pi.control_type}#{pi.automation_id or ''}"); p = p.parent()
+                print(line(e) + " | parents=" + " < ".join(chain))
+    sys.exit(0)
 
 for w in wins:
     print(f"## WINDOW: {w.window_text()} | class={w.class_name()}")
