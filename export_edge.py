@@ -61,6 +61,11 @@ def close_dialogs():
             if w.window_text() == "Export": w.close()
     except Exception: pass
 
+def _on_crash(t, v, tb):
+    import traceback; traceback.print_exception(t, v, tb)
+    close_dialogs(); sys.exit(1)
+sys.excepthook = _on_crash   # any unexpected error still closes Edge's Export window
+
 # ---------- 1. Bring Edge forward, open Reporting > Recent Reports ----------
 main = edge()
 main.set_focus(); time.sleep(1)
@@ -139,14 +144,36 @@ if reuse:
         if eb is not None and not eb.is_enabled(): break
         time.sleep(1)
 log("Waiting for report to load (up to 10 min)")
+# Freshness guard: only accept the report once Export has been seen greyed out (a load happened after Run/View).
+saw_loading = False
+if reuse:
+    saw_loading = True   # the reuse branch above already waited for Export to grey out
 end, idle_since, viewed = time.time() + 600, None, reuse
 export_btn = None
 while time.time() < end:
     eb = find(main, auto_id="btnExport", timeout=2)
-    if eb is not None and eb.is_enabled():
-        export_btn = eb; break
+    if eb is not None and not eb.is_enabled():
+        saw_loading = True
+    elif eb is not None and eb.is_enabled():
+        if saw_loading or viewed:
+            export_btn = eb; break
+        # Export is clickable but no load was seen: could be an old render. Refresh once with View.
+        v = find(main, auto_id="btnView", timeout=2)
+        if v is not None and v.is_enabled():
+            log("Report looks already loaded; clicking View to make sure numbers are fresh")
+            try: v.invoke()
+            except Exception:
+                try: v.click_input()
+                except Exception: pass
+            viewed = True
+            t = time.time() + 60
+            while time.time() < t:
+                e2 = find(main, auto_id="btnExport", timeout=2)
+                if e2 is not None and not e2.is_enabled(): saw_loading = True; break
+                time.sleep(0.5)
+            continue
     v = find(main, auto_id="btnView", timeout=2)
-    if v is not None and v.is_enabled() and not viewed:
+    if v is not None and v.is_enabled() and not viewed and not (eb is not None and eb.is_enabled()):
         idle_since = idle_since or time.time()
         if time.time() - idle_since >= 15:
             log("Report not loading on its own; clicking View")
@@ -186,7 +213,48 @@ while dlg is None and time.time() < end:
 if dlg is None: fail("Export window did not open")
 box = find(dlg, auto_id="_exportDirectoryTextBox", control_type="Edit", timeout=10)
 if box is None: fail("export folder box not found")
-box.set_edit_text(TMP); time.sleep(1)
+def export_ready():
+    b = find(dlg, auto_id="_exportButton", timeout=1); return b is not None and b.is_enabled()
+
+def wm_settext(ctrl, text):
+    import ctypes
+    h = ctrl.element_info.handle
+    if not h: return False
+    ctypes.windll.user32.SendMessageW(h, 0x000C, 0, ctypes.c_wchar_p(text))   # WM_SETTEXT (also fires EN_CHANGE)
+    return True
+
+# Way 1: set the box directly. Way 2: WM_SETTEXT (works on read-only WinForms boxes). Way 3: Browse dialog.
+try: box.set_edit_text(TMP)
+except Exception as ex: log(f"(folder box is read-only: {ex.__class__.__name__}; trying direct set)")
+time.sleep(1)
+if not export_ready():
+    try: wm_settext(box, TMP)
+    except Exception as ex: log(f"(direct set failed: {ex})")
+    time.sleep(1)
+if not export_ready():
+    log("Using Browse to pick the folder")
+    before = {w.handle for w in pid_windows()}
+    find(dlg, auto_id="_exportDirectoryButton", timeout=5).invoke(); time.sleep(3)
+    picker = next((w for w in pid_windows() if w.handle not in before), None)
+    if picker is None: fail("Browse did not open a folder picker")
+    log(f"Folder picker: {picker.window_text()!r} class={picker.class_name()}")
+    edits_ = [e for e in picker.descendants() if e.element_info.control_type == "Edit"]
+    if not edits_:
+        types_ = sorted({e.element_info.control_type for e in picker.descendants()})
+        picker.close()
+        fail(f"folder picker has no folder box (types: {types_})")
+    fld = edits_[-1]
+    try: fld.set_edit_text(TMP)
+    except Exception:
+        fld.click_input(); send_keys("^a"); send_keys(TMP, with_spaces=True)
+    time.sleep(1)
+    okb = next((e for e in picker.descendants() if e.element_info.control_type == "Button"
+                and (e.element_info.name or "").replace("&", "").strip().lower() in ("ok", "select folder")), None)
+    if okb is not None: okb.invoke()
+    else: send_keys("{ENTER}")
+    time.sleep(2)
+v_ = box.legacy_properties().get("Value", "") if box else ""
+log(f"Export folder box now: {v_!r}")
 go = wait_enabled(lambda: find(dlg, auto_id="_exportButton", timeout=2), 15, "Export button in dialog")
 log(f"Exporting to {TMP}")
 go.invoke()
