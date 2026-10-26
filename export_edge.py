@@ -22,16 +22,23 @@ def edge():
 
 def pid_windows(): p = edge().process_id(); return [w for w in desk.windows() if w.process_id() == p]
 
-def find(root, timeout=30, **crit):
-    """Wait for a control under root matching crit (auto_id / title / control_type)."""
+_last_err = [None]
+def find(root, timeout=30, title=None, auto_id=None, control_type=None):
+    """Wait for a control under root matching visible name / developer ID / control type.
+    (pywinauto's descendants() only filters by control_type, so name and ID are matched here.)"""
     end = time.time() + timeout
-    while time.time() < end:
+    while True:
         try:
-            hits = root.descendants(**crit)
-            if hits: return hits[0]
-        except Exception: pass
+            els = root.descendants(control_type=control_type) if control_type else root.descendants()
+            for e in els:
+                i = e.element_info
+                if title is not None and (i.name or "").strip() != title: continue
+                if auto_id is not None and (i.automation_id or "") != auto_id: continue
+                return e
+        except Exception as ex:
+            if str(ex) != _last_err[0]: _last_err[0] = str(ex); log(f"(lookup retry: {ex})")
+        if time.time() >= end: return None
         time.sleep(0.5)
-    return None
 
 def wait_enabled(ctrl_fn, timeout, what):
     end = time.time() + timeout
