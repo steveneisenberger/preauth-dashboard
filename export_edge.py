@@ -193,17 +193,29 @@ time.sleep(5)
 os.makedirs(TMP, exist_ok=True)
 for f in glob.glob(os.path.join(TMP, "*")): os.remove(f)
 log("Export > PDF")
-export_btn.click_input(); time.sleep(2)
-pdf_item = None
-end = time.time() + 15
-while pdf_item is None and time.time() < end:
-    for w in desk.windows():
+def find_pdf_item():
+    # only Edge's own windows (the drop-down is an Edge pop-up); scanning Chrome/Claude trees is far too slow
+    for w in pid_windows():
         try:
-            hits = [e for e in w.descendants() if e.window_text().strip() == "PDF"]
-            if hits: pdf_item = hits[0]; break
+            for e in w.descendants():
+                if (e.element_info.name or "").strip() == "PDF":
+                    return e
         except Exception: pass
-    time.sleep(0.5)
+    return None
+
+pdf_item = None
+for attempt in range(3):
+    export_btn = find(main, auto_id="btnExport", timeout=5) or export_btn
+    export_btn.click_input(); time.sleep(2)
+    end = time.time() + 15
+    while pdf_item is None and time.time() < end:
+        pdf_item = find_pdf_item()
+        if pdf_item is None: time.sleep(0.5)
+    if pdf_item is not None: break
+    log(f"Export menu not seen (try {attempt + 1}); pressing Esc and retrying")
+    send_keys("{ESC}"); time.sleep(2)
 if pdf_item is None: fail("PDF option not found in Export menu")
+log(f"PDF option: {pdf_item.element_info.control_type}")
 pdf_item.click_input(); time.sleep(3)
 
 dlg = None
