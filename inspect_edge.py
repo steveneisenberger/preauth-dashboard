@@ -12,6 +12,7 @@ label = args[0] if args else "screen"
 wide = "--wide" in args
 trees = "--trees" in args
 under = args[args.index("--under") + 1] if "--under" in args else None
+menus = "--menus" in args
 KEEP = {"Button", "MenuItem", "TabItem", "ComboBox", "CheckBox", "RadioButton", "Hyperlink", "SplitButton", "Menu", "ToolBar"}
 NEVER = {"DataItem", "ListItem", "Text", "Edit", "Document", "DataGrid", "Table", "TreeItem", "Image",
          "ScrollBar", "Thumb", "Header", "HeaderItem", "List", "Tree", "ToolTip", "StatusBar"}
@@ -24,9 +25,21 @@ pid = main[0].process_id()
 wins = [w for w in desk.windows() if w.process_id() == pid]     # main window + any Edge dialogs/menus
 print(f"=== {label}: {len(wins)} Edge window(s) ===")
 
-def line(e):
+def line(e, with_value=False):
     i = e.element_info
-    return f"{i.control_type} | {(i.name or '').replace(chr(10), ' ')[:40]} | id={i.automation_id or ''} | enabled={e.is_enabled()}"
+    out = f"{i.control_type} | {(i.name or '').replace(chr(10), ' ')[:40]} | id={i.automation_id or ''} | enabled={e.is_enabled()}"
+    if with_value:
+        try:
+            v = e.legacy_properties().get("Value", "")
+            if v: out += f" | value={str(v)[:60]}"
+        except Exception: pass
+    return out
+
+if menus:   # any open drop-down menu anywhere on screen (menu item names only)
+    print("=== open menus ===")
+    for w in desk.windows():
+        for e in w.descendants(control_type="MenuItem"):
+            print(f"[{w.window_text()[:30]} | pid={w.process_id()}] " + line(e))
 
 for w in wins:
     print(f"## WINDOW: {w.window_text()} | class={w.class_name()}")
@@ -36,7 +49,7 @@ for w in wins:
             print(f"-- inside {under} --")
             for e in r.descendants():
                 if e.element_info.control_type in ("Image", "Thumb", "ScrollBar"): continue
-                print(line(e))
+                print(line(e, with_value=True))
         continue
     types = collections.Counter(); seen = 0
     for e in w.descendants():
