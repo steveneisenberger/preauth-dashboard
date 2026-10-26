@@ -13,6 +13,7 @@ wide = "--wide" in args
 trees = "--trees" in args
 under = args[args.index("--under") + 1] if "--under" in args else None
 menus = "--menus" in args
+edits = "--edits" in args
 KEEP = {"Button", "MenuItem", "TabItem", "ComboBox", "CheckBox", "RadioButton", "Hyperlink", "SplitButton", "Menu", "ToolBar"}
 NEVER = {"DataItem", "ListItem", "Text", "Edit", "Document", "DataGrid", "Table", "TreeItem", "Image",
          "ScrollBar", "Thumb", "Header", "HeaderItem", "List", "Tree", "ToolTip", "StatusBar"}
@@ -43,6 +44,11 @@ if menus:   # any open drop-down menu anywhere on screen (menu item names only)
 
 for w in wins:
     print(f"## WINDOW: {w.window_text()} | class={w.class_name()}")
+    if edits:   # text boxes in Edge's pop-up dialogs only (e.g. export folder / file name), never the main window
+        if not w.window_text().startswith("Ortho2 Edge"):
+            for e in w.descendants(control_type="Edit"):
+                print(line(e, with_value=True))
+        continue
     if under:
         roots = [e for e in w.descendants() if e.element_info.automation_id == under]
         for r in roots:
