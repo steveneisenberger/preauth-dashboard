@@ -25,20 +25,27 @@ def pid_windows(): p = edge().process_id(); return [w for w in desk.windows() if
 _last_err = [None]
 def find(root, timeout=30, title=None, auto_id=None, control_type=None):
     """Wait for a control under root matching visible name / developer ID / control type.
-    (pywinauto's descendants() only filters by control_type, so name and ID are matched here.)"""
+    Same full-tree scan as inspect_edge.py (known to work on this PC); all matching done here."""
     end = time.time() + timeout
     while True:
         try:
-            els = root.descendants(control_type=control_type) if control_type else root.descendants()
-            for e in els:
+            for e in root.descendants():
                 i = e.element_info
-                if title is not None and (i.name or "").strip() != title: continue
+                if control_type is not None and i.control_type != control_type: continue
+                if title is not None and (i.name or "").strip().lower() != title.lower(): continue
                 if auto_id is not None and (i.automation_id or "") != auto_id: continue
                 return e
         except Exception as ex:
             if str(ex) != _last_err[0]: _last_err[0] = str(ex); log(f"(lookup retry: {ex})")
         if time.time() >= end: return None
         time.sleep(0.5)
+
+def describe(root, title):
+    """For error messages: every control with this visible name (type + ID), no patient data."""
+    try:
+        return "; ".join(f"{e.element_info.control_type}#{e.element_info.automation_id or ''}"
+                         for e in root.descendants() if (e.element_info.name or "").strip().lower() == title.lower()) or "none"
+    except Exception as ex: return f"scan error {ex}"
 
 def wait_enabled(ctrl_fn, timeout, what):
     end = time.time() + timeout
@@ -58,8 +65,9 @@ def close_dialogs():
 main = edge()
 main.set_focus(); time.sleep(1)
 log("Opening Reporting tab")
-tab = find(main, title="Reporting", auto_id="PART_LabelContent", control_type="Text", timeout=10)
-if tab is None: fail("Reporting tab not found")
+tab = find(main, title="Reporting", auto_id="PART_LabelContent", timeout=10) or find(main, title="Reporting", timeout=2)
+if tab is None: fail(f"Reporting tab not found. Window: {main.window_text()!r}. Controls named Reporting: {describe(main, 'Reporting')}")
+log(f"Found Reporting: {tab.element_info.control_type}#{tab.element_info.automation_id}")
 tab.click_input(); time.sleep(2)
 
 grid = find(main, auto_id="lstRecentReports", control_type="DataGrid", timeout=15)
