@@ -106,7 +106,18 @@ if "all" not in str(office_txt).lower():
 
 # ---------- 3. View (report takes ~2 min) ----------
 log("Clicking View; waiting for report (up to 10 min)")
-view.invoke()
+# Run may already be rendering the report (View greys out while it does). Keep trying View until it takes.
+clicked, end = False, time.time() + 600
+while not clicked and time.time() < end:
+    v = find(main, auto_id="btnView", timeout=2)
+    if v is not None and v.is_enabled():
+        try: v.invoke(); clicked = True
+        except Exception:
+            try: v.click_input(); clicked = True
+            except Exception: pass
+    if not clicked: time.sleep(2)
+if not clicked: fail("View button never became clickable")
+log("View clicked")
 # if an old report was already showing, wait for Export to grey out (new render started) before waiting for it to come back
 end = time.time() + 30
 while time.time() < end:
