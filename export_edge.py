@@ -348,10 +348,22 @@ save_btn = next((c for c in kids if _class(c) == "Button" and u.GetDlgCtrlID(c) 
 if name_box is None:
     u.PostMessageW(sa, 0x0010, 0, 0)   # WM_CLOSE
     fail("File name box (id 1001) not found in Save As")
+def edit_text(h):
+    # GetWindowText only returns captions for other processes' windows; an Edit needs WM_GETTEXT
+    n = u.SendMessageW(h, 0x000E, 0, 0)                    # WM_GETTEXTLENGTH
+    b = ctypes.create_unicode_buffer(n + 1); u.SendMessageW(h, 0x000D, n + 1, b); return b.value
 u.SendMessageW(name_box, 0x000C, 0, ctypes.c_wchar_p(target))   # WM_SETTEXT
 time.sleep(1)
-log(f"File name box now: {_title(name_box)!r}")
-if _title(name_box) != target:
+if edit_text(name_box) != target:
+    log(f"(WM_SETTEXT left the box as {edit_text(name_box)!r}; trying UIA by handle)")
+    try:
+        sa_ui = desk.window(handle=sa)
+        nb = next((e for e in sa_ui.descendants() if e.element_info.control_type == "Edit"
+                   and (e.element_info.automation_id or "") == "1001"), None)
+        if nb is not None: nb.set_edit_text(target); time.sleep(1)
+    except Exception as ex: log(f"(UIA fallback failed: {ex})")
+log(f"File name box now: {edit_text(name_box)!r}")
+if edit_text(name_box) != target:
     u.PostMessageW(sa, 0x0010, 0, 0)
     fail("could not set the file name in Save As")
 u.SetForegroundWindow(sa); time.sleep(0.3)
