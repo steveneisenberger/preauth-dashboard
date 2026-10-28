@@ -12,8 +12,8 @@ except ValueError:                       # Feb 29
 
 OFF = {'HAN': 'HP', 'BP': 'BP', 'WAL': 'WAL'}
 ST = {'MC': 'MC', 'SUB': 'SUB', 'APP-MC': 'APP-MC', 'REJ-MC': 'REJ-MC',
-      '(1) MC PH1': 'MC PH1', '(1) PH1SUB': 'PH1 SUB', '(1)PH1 APP': 'PH1 APP'}
-STATUSES = ['MC', 'SUB', 'APP-MC', 'REJ-MC', 'MC PH1', 'PH1 SUB', 'PH1 APP']
+      '(1) MC PH1': 'MC PH1', '(1) PH1SUB': 'PH1 SUB', '(1)PH1 APP': 'PH1 APP', '(1)PH1-DEN': 'PH1 DEN'}
+STATUSES = ['MC', 'SUB', 'APP-MC', 'REJ-MC', 'MC PH1', 'PH1 SUB', 'PH1 APP', 'PH1 DEN']
 GROUPS = [('HP', 'DentaQuest'), ('HP', 'United Healthcare'), ('BP', 'DentaQuest'), ('BP', 'United Healthcare'),
           ('WAL', 'DentaQuest'), ('WAL', 'United Healthcare'), ('WAL', 'Liberty Dental')]
 

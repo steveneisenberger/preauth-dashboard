@@ -1,6 +1,6 @@
 # Exports Ortho2 Edge "Patient List - Custom" to PDF, finding every control by its ID or name (no fixed screen positions).
 # Usage: python export_edge.py <output.pdf>
-# Route: Reporting tab > Recent Reports > Patient List - Custom > Run > (verify 7 statuses + Office) > View > Export > PDF
+# Route: Reporting tab > Recent Reports > Patient List - Custom > Run > (verify 8 statuses + Office) > View > Export > PDF
 # Exit 0 = PDF saved. Any problem = message + exit 1 (run_preauth.ps1 then deletes leftovers and resumes Rob).
 import sys, os, time, glob, shutil
 from pywinauto import Desktop
@@ -9,7 +9,7 @@ from pywinauto.keyboard import send_keys
 OUT = sys.argv[1]
 TMP = os.path.join(os.path.dirname(OUT), "tmp")
 REPORT = "Patient List - Custom"
-WANT = {"MC", "SUB", "APP-MC", "REJ-MC", "(1) MC PH1", "(1) PH1SUB", "(1)PH1 APP"}
+WANT = {"MC", "SUB", "APP-MC", "REJ-MC", "(1) MC PH1", "(1) PH1SUB", "(1)PH1 APP", "(1)PH1-DEN"}
 desk = Desktop(backend="uia")
 
 def log(m): print(f"  [{time.strftime('%H:%M:%S')}] {m}", flush=True)
