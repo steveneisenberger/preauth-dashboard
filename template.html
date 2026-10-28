@@ -14,11 +14,7 @@
   --p1mc:#c4b5fd; --p1sub:#8b5cf6; --p1app:#0d9488; --p1rej:#be123c;
   --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0e1116; --card:#161b22; --ink:#e6e9ee; --muted:#8b95a5; --line:#262d37; --soft:#1c222b;
-  --accent:#6b8cff; --shadow:none;
-}}
-:root[data-theme="dark"]{--bg:#0e1116; --card:#161b22; --ink:#e6e9ee; --muted:#8b95a5; --line:#262d37; --soft:#1c222b; --accent:#6b8cff; --shadow:none;}
+/* Always light: the dashboard no longer follows the browser's dark-mode setting. */
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1180px;margin:0 auto;padding:28px 16px 48px}
