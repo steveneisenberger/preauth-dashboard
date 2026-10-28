@@ -55,6 +55,22 @@ def wait_enabled(ctrl_fn, timeout, what):
         time.sleep(1)
     fail(f"timed out waiting for {what}")
 
+def press(ctrl, what):
+    """Press a button without the mouse and without blocking.
+    WinForms/Win32 buttons have a real window handle: post BM_CLICK to it. A posted message is
+    handled by Edge's UI thread even if another window (the 'Exporting Report...' spinner) sits
+    on top of the button, and it returns at once even when the button opens a modal window
+    (invoke() blocks until that window closes; click_input() misses when something covers it)."""
+    import ctypes
+    h = ctrl.element_info.handle
+    if h:
+        ctypes.windll.user32.PostMessageW(h, 0x00F5, 0, 0)   # BM_CLICK
+        log(f"{what}: posted click to handle {h}")
+        return True
+    log(f"{what}: no window handle, using mouse click")
+    ctrl.click_input()
+    return False
+
 def close_dialogs():
     # must never call fail()/edge() (that caused an endless loop when Edge was busy)
     try:
@@ -193,7 +209,28 @@ while time.time() < end:
     time.sleep(2)
 if export_btn is None: fail("report did not finish loading within 10 min")
 log("Report loaded")
-time.sleep(5)
+
+# Export becomes clickable while the viewer is still rendering pages (the "1/434" counter keeps
+# climbing to the real total). Exporting then would silently undercount, so wait until the
+# page total has held still for 15 s. Non-fatal if the counter can't be found.
+import re
+def page_total():
+    try:
+        for e in main.descendants(control_type="Text"):
+            m = re.fullmatch(r"\s*\d+\s*/\s*(\d+)\s*", e.element_info.name or "")
+            if m: return int(m.group(1))
+    except Exception: pass
+    return None
+end, last, stable_since = time.time() + 300, None, None
+while time.time() < end:
+    n = page_total()
+    if n is None:
+        log("(page counter not found; waiting 15 s instead)"); time.sleep(15); break
+    if n != last: last, stable_since = n, time.time(); log(f"Pages rendered so far: {n}")
+    elif time.time() - stable_since >= 15: break
+    time.sleep(3)
+if last is not None: log(f"Report pages: {last}")
+time.sleep(2)
 
 # ---------- 4. Export > PDF ----------
 os.makedirs(TMP, exist_ok=True)
@@ -234,19 +271,34 @@ if box is None: fail("export folder box not found")
 def export_ready():
     b = find(dlg, auto_id="_exportButton", timeout=1); return b is not None and b.is_enabled()
 
-# Edge's folder box is read-only; Browse opens a standard Windows "Save As" window.
-# Type the full file path into its File name box and click Save; Edge then fills the folder box.
+# Edge's "Export to" box is read-only; Browse opens a standard Windows "Save As" window (confirmed
+# on screen Oct 28: it starts in Edge's Program Files folder). Type the full file path into its
+# File name box and click Save; Edge then fills the box with that path and enables Export.
 target = os.path.join(TMP, "preauth.pdf")
 log("Browse > Save As")
 before = {w.handle for w in pid_windows()}
-find(dlg, auto_id="_exportDirectoryButton", timeout=5).click_input()   # click, not invoke: invoke blocks on modal windows
-saveas, end = None, time.time() + 20
-while saveas is None and time.time() < end:
-    time.sleep(1)
-    saveas = next((w for w in pid_windows() if w.handle not in before and w.window_text() == "Save As"), None)
-    if saveas is None:   # common dialogs are sometimes owned by another process; fall back to any new "Save As"
-        saveas = next((w for w in desk.windows() if w.window_text() == "Save As"), None)
+browse = find(dlg, auto_id="_exportDirectoryButton", timeout=5)
+if browse is None: fail("Browse button not found in Export window")
+def find_saveas():
+    s = next((w for w in pid_windows() if w.handle not in before and w.window_text() == "Save As"), None)
+    if s is None:   # common dialogs are sometimes owned by another process; fall back to any "Save As"
+        s = next((w for w in desk.windows() if w.window_text() == "Save As"), None)
+    return s
+def wait_saveas(secs):
+    s, end = None, time.time() + secs
+    while s is None and time.time() < end:
+        time.sleep(1); s = find_saveas()
+    return s
+posted = press(browse, "Browse")
+saveas = wait_saveas(20)
+if saveas is None and posted:
+    log("Save As not seen after posted click; trying a mouse click on Browse")
+    try: dlg.set_focus()
+    except Exception: pass
+    browse.click_input()
+    saveas = wait_saveas(15)
 if saveas is None: fail("Save As window did not open after Browse")
+log("Save As open")
 name_box = next((e for e in saveas.descendants() if e.element_info.control_type == "Edit"
                  and (e.element_info.automation_id or "") == "1001"), None)
 if name_box is None:
@@ -257,20 +309,25 @@ try: name_box.set_edit_text(target)
 except Exception:
     name_box.click_input(); send_keys("^a{BACKSPACE}"); send_keys(target, with_spaces=True)
 time.sleep(1)
+try: typed = name_box.legacy_properties().get("Value", "")
+except Exception: typed = "?"
+log(f"File name box now: {typed!r}")
 save_btn = next((e for e in saveas.descendants() if e.element_info.control_type == "Button"
                  and (e.element_info.automation_id or "") == "1"), None)
-if save_btn is not None: save_btn.click_input()
+if save_btn is not None: press(save_btn, "Save")
 else: name_box.click_input(); send_keys("{ENTER}")
 end = time.time() + 15
-while time.time() < end and any(w.window_text() == "Save As" for w in pid_windows()): time.sleep(0.5)
-if any(w.window_text() == "Save As" for w in pid_windows()):
+while time.time() < end and find_saveas() is not None: time.sleep(0.5)
+if find_saveas() is not None:
     fail("Save As did not close (path rejected?)")
 time.sleep(1)
 v_ = box.legacy_properties().get("Value", "") if box else ""
-log(f"Export folder box now: {v_!r}")
+log(f"Export-to box now: {v_!r}")
+if TMP.lower() not in str(v_).lower():
+    fail(f"Export-to box does not point at the temp folder; not exporting")
 go = wait_enabled(lambda: find(dlg, auto_id="_exportButton", timeout=2), 15, "Export button in dialog")
 log(f"Exporting to {TMP}")
-go.click_input()   # click, not invoke: the export runs while Edge shows a busy window
+press(go, "Export")   # not invoke: the export runs while Edge shows a busy window
 
 # ---------- 5. Wait for the PDF to finish writing ----------
 end, last = time.time() + 900, -1
