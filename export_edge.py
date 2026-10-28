@@ -81,6 +81,20 @@ def close_dialogs():
             if w.process_id() == p and w.window_text() in ("Save As", "Export", "Browse For Folder", "Select Folder"):
                 try: w.close()
                 except Exception: pass
+        # the Save As window is invisible to the UIA listing above; close it via win32 as well
+        import ctypes
+        from ctypes import wintypes
+        u_ = ctypes.windll.user32
+        @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+        def cb(h, l):
+            try:
+                pp = wintypes.DWORD(); u_.GetWindowThreadProcessId(h, ctypes.byref(pp))
+                b = ctypes.create_unicode_buffer(256); u_.GetWindowTextW(h, b, 256)
+                if pp.value == p and u_.IsWindowVisible(h) and b.value in ("Save As", "Export"):
+                    u_.PostMessageW(h, 0x0010, 0, 0)   # WM_CLOSE
+            except Exception: pass
+            return True
+        u_.EnumWindows(cb, 0)
     except Exception: pass
 
 def _on_crash(t, v, tb):
@@ -271,62 +285,96 @@ if box is None: fail("export folder box not found")
 def export_ready():
     b = find(dlg, auto_id="_exportButton", timeout=1); return b is not None and b.is_enabled()
 
-# Edge's "Export to" box is read-only; Browse opens a standard Windows "Save As" window (confirmed
-# on screen Oct 28: it starts in Edge's Program Files folder). Type the full file path into its
-# File name box and click Save; Edge then fills the box with that path and enables Export.
+# Edge's "Export to" box is read-only (WM_SETTEXT fills it but Export stays grey), so Browse it is.
+# Browse opens a standard Windows "Save As" window (#32770). pywinauto's UIA desktop listing does
+# NOT show that window (confirmed Oct 28), so it is found and driven with plain win32 calls:
+# EnumWindows -> WM_SETTEXT on the File name box (id 1001) -> BM_CLICK on Save (id 1).
+import ctypes
+from ctypes import wintypes
+u = ctypes.windll.user32
+def _title(h):
+    b = ctypes.create_unicode_buffer(512); u.GetWindowTextW(h, b, 512); return b.value
+def _class(h):
+    b = ctypes.create_unicode_buffer(256); u.GetClassNameW(h, b, 256); return b.value
+def _pid(h):
+    p = wintypes.DWORD(); u.GetWindowThreadProcessId(h, ctypes.byref(p)); return p.value
+def top_windows():
+    out = []
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    def cb(h, l):
+        if u.IsWindowVisible(h): out.append(h)
+        return True
+    u.EnumWindows(cb, 0); return out
+def child_windows(h):
+    out = []
+    @ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+    def cb(c, l):
+        out.append(c); return True
+    u.EnumChildWindows(h, cb, 0); return out
+def find_saveas_hwnd(before):
+    for h in top_windows():
+        if h in before: continue
+        if _class(h) == "#32770" and _title(h) == "Save As" and _pid(h) == edge_pid: return h
+    return None
+def saveas_alive(h): return bool(u.IsWindow(h)) and bool(u.IsWindowVisible(h))
+
 target = os.path.join(TMP, "preauth.pdf")
+edge_pid = main.process_id()
 log("Browse > Save As")
-before = {w.handle for w in pid_windows()}
 browse = find(dlg, auto_id="_exportDirectoryButton", timeout=5)
 if browse is None: fail("Browse button not found in Export window")
-def find_saveas():
-    s = next((w for w in pid_windows() if w.handle not in before and w.window_text() == "Save As"), None)
-    if s is None:   # common dialogs are sometimes owned by another process; fall back to any "Save As"
-        s = next((w for w in desk.windows() if w.window_text() == "Save As"), None)
-    return s
-def wait_saveas(secs):
-    s, end = None, time.time() + secs
-    while s is None and time.time() < end:
-        time.sleep(1); s = find_saveas()
-    return s
+before = set(top_windows())
+try: u.SetForegroundWindow(dlg.element_info.handle); time.sleep(0.5)   # BM_CLICK needs an active dialog
+except Exception: pass
 posted = press(browse, "Browse")
-saveas = wait_saveas(20)
-if saveas is None and posted:
+def wait_saveas(secs):
+    h, end = None, time.time() + secs
+    while h is None and time.time() < end:
+        time.sleep(0.5); h = find_saveas_hwnd(before)
+    return h
+sa = wait_saveas(20)
+if sa is None and posted:
     log("Save As not seen after posted click; trying a mouse click on Browse")
     try: dlg.set_focus()
     except Exception: pass
     browse.click_input()
-    saveas = wait_saveas(15)
-if saveas is None: fail("Save As window did not open after Browse")
-log("Save As open")
-name_box = next((e for e in saveas.descendants() if e.element_info.control_type == "Edit"
-                 and (e.element_info.automation_id or "") == "1001"), None)
-if name_box is None:
-    name_box = next((e for e in saveas.descendants() if e.element_info.control_type == "Edit"
-                     and "file name" in (e.element_info.name or "").lower()), None)
-if name_box is None: saveas.close(); fail("File name box not found in Save As")
-try: name_box.set_edit_text(target)
-except Exception:
-    name_box.click_input(); send_keys("^a{BACKSPACE}"); send_keys(target, with_spaces=True)
+    sa = wait_saveas(15)
+if sa is None: fail("Save As window did not open after Browse")
+log(f"Save As open (handle {sa})")
 time.sleep(1)
-try: typed = name_box.legacy_properties().get("Value", "")
-except Exception: typed = "?"
-log(f"File name box now: {typed!r}")
-save_btn = next((e for e in saveas.descendants() if e.element_info.control_type == "Button"
-                 and (e.element_info.automation_id or "") == "1"), None)
-if save_btn is not None: press(save_btn, "Save")
-else: name_box.click_input(); send_keys("{ENTER}")
+kids = child_windows(sa)
+name_box = next((c for c in kids if _class(c) == "Edit" and u.GetDlgCtrlID(c) == 1001), None)
+save_btn = next((c for c in kids if _class(c) == "Button" and u.GetDlgCtrlID(c) == 1), None)
+if name_box is None:
+    u.PostMessageW(sa, 0x0010, 0, 0)   # WM_CLOSE
+    fail("File name box (id 1001) not found in Save As")
+u.SendMessageW(name_box, 0x000C, 0, ctypes.c_wchar_p(target))   # WM_SETTEXT
+time.sleep(1)
+log(f"File name box now: {_title(name_box)!r}")
+if _title(name_box) != target:
+    u.PostMessageW(sa, 0x0010, 0, 0)
+    fail("could not set the file name in Save As")
+u.SetForegroundWindow(sa); time.sleep(0.3)
+if save_btn is not None:
+    u.PostMessageW(save_btn, 0x00F5, 0, 0); log("Save: posted click")   # BM_CLICK
+else:
+    u.PostMessageW(sa, 0x0111, 1, 0); log("Save: posted IDOK")           # WM_COMMAND IDOK
 end = time.time() + 15
-while time.time() < end and find_saveas() is not None: time.sleep(0.5)
-if find_saveas() is not None:
-    fail("Save As did not close (path rejected?)")
+while time.time() < end and saveas_alive(sa): time.sleep(0.5)
+if saveas_alive(sa):
+    # a second Save As (e.g. an overwrite prompt) would also be new; list anything new for the log
+    extra = [(_title(h), _class(h)) for h in top_windows() if h not in before and h != sa]
+    u.PostMessageW(sa, 0x0010, 0, 0)
+    fail(f"Save As did not close (path rejected?). Other new windows: {extra}")
 time.sleep(1)
 v_ = box.legacy_properties().get("Value", "") if box else ""
 log(f"Export-to box now: {v_!r}")
 if TMP.lower() not in str(v_).lower():
-    fail(f"Export-to box does not point at the temp folder; not exporting")
+    fail("Export-to box does not point at the temp folder; not exporting")
 go = wait_enabled(lambda: find(dlg, auto_id="_exportButton", timeout=2), 15, "Export button in dialog")
 log(f"Exporting to {TMP}")
+try: u.SetForegroundWindow(dlg.element_info.handle); time.sleep(0.3)
+except Exception: pass
 press(go, "Export")   # not invoke: the export runs while Edge shows a busy window
 
 # ---------- 5. Wait for the PDF to finish writing ----------
