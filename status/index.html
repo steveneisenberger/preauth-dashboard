@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Automation Status</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8; --card: #ffffff; --ink: #14181f; --ink2: #545c68; --line: #e3e6ea;
+  --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b; --neutral: #7b8491;
+  --mark-ink: #ffffff; --warn-ink: #0b0b0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111418; --card: #1a1e24; --ink: #eef0f3; --ink2: #a4acb8; --line: #2c323a; --neutral: #8a93a0; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+.summary { margin: 6px 0 20px; color: var(--ink2); }
+.summary b { color: var(--ink); font-weight: 600; }
+.banner { display: none; gap: 10px; align-items: flex-start; background: var(--card); border: 1px solid var(--line);
+  border-left: 4px solid var(--serious); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; }
+.banner.on { display: flex; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+.top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+h2 { font-size: 16px; margin: 0; }
+.sched { color: var(--ink2); font-size: 13px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; white-space: nowrap; border: 1px solid var(--line); }
+.dot { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; line-height: 1; color: var(--mark-ink); flex: none; }
+.s-success .dot { background: var(--good); }
+.s-failed .dot { background: var(--crit); }
+.s-late .dot, .s-missed .dot { background: var(--warn); color: var(--warn-ink); }
+.s-test .dot, .s-paused .dot, .s-running .dot, .s-none .dot { background: var(--neutral); }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 24px; margin-top: 12px; }
+.fact span { display: block; color: var(--ink2); font-size: 12px; }
+.fact b { font-weight: 600; }
+.detail { margin: 10px 0 0; }
+details { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+summary { cursor: pointer; color: var(--ink2); font-size: 13px; padding: 4px 0; }
+ul { list-style: none; margin: 6px 0 0; padding: 0; }
+li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 14px; }
+li .when { min-width: 132px; font-variant-numeric: tabular-nums; }
+li .what { color: var(--ink2); }
+footer { color: var(--ink2); font-size: 13px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Automation Status</h1>
+  <p class="summary" id="summary">Loading&hellip;</p>
+  <div class="banner" id="banner" role="alert"></div>
+  <div id="cards"></div>
+  <footer>Times are Eastern. This page checks for new results every minute. Benny-PC reports every 5 minutes.</footer>
+</main>
+<script>
+var DATA_URL = "https://raw.githubusercontent.com/steveneisenberger/preauth-dashboard/status-data/status.json";
+var STALE_MIN = 20, TZ = "America/New_York";
+var LABEL = { success: "Success", failed: "Failed", late: "Late", missed: "Missed", paused: "Paused",
+              test: "Test", running: "Running", none: "No runs" };
+var ICON = { success: "✓", failed: "✕", late: "!", missed: "!", paused: "‖", test: "T", running: "…", none: "–" };
+var BAD = { failed: 1, late: 1, missed: 1 };
+var latest = null;
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function dayKey(d) { return d.toLocaleDateString("en-US", { timeZone: TZ }); }
+function when(iso) {
+  var d = new Date(iso), clock = d.toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" });
+  if (dayKey(d) === dayKey(new Date())) return "Today " + clock;
+  return d.toLocaleDateString("en-US", { timeZone: TZ, weekday: "short", month: "numeric", day: "numeric" }) + ", " + clock;
+}
+function ago(iso) {
+  var m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  if (m < 1) return "just now";
+  if (m < 60) return m + " min ago";
+  var h = Math.round(m / 60);
+  if (h < 48) return h + (h === 1 ? " hour ago" : " hours ago");
+  return Math.round(h / 24) + " days ago";
+}
+function badge(status, tag) {
+  var p = el(tag || "span", "pill s-" + status), d = el("span", "dot", ICON[status] || "?");
+  d.setAttribute("aria-hidden", "true");
+  p.appendChild(d);
+  p.appendChild(el("span", "", LABEL[status] || status));
+  return p;
+}
+function fact(label, value) {
+  var f = el("div", "fact");
+  f.appendChild(el("span", "", label));
+  f.appendChild(el("b", "", value));
+  return f;
+}
+function card(a) {
+  var c = el("section", "card"), top = el("div", "top"), head = el("div");
+  head.appendChild(el("h2", "", a.name));
+  head.appendChild(el("div", "sched", a.schedule));
+  top.appendChild(head);
+  top.appendChild(badge(a.status));
+  c.appendChild(top);
+
+  var facts = el("div", "facts");
+  facts.appendChild(fact("Last run", a.last_run ? when(a.last_run) + " (" + ago(a.last_run) + ")" : "None logged"));
+  facts.appendChild(fact("Today", a.today_runs + (a.today_runs === 1 ? " run, " : " runs, ") + a.today_failed + " failed"));
+  c.appendChild(facts);
+  if (a.detail) c.appendChild(el("p", "detail", a.detail));
+
+  if (a.runs.length) {
+    var box = el("details"), list = el("ul");
+    box.appendChild(el("summary", "", a.runs.length === 1 ? "Last run" : "Last " + a.runs.length + " runs"));
+    a.runs.forEach(function (r) {
+      var li = el("li", "s-" + r.status), d = el("span", "dot", ICON[r.status] || "?");
+      d.setAttribute("aria-hidden", "true");
+      li.appendChild(d);
+      li.appendChild(el("span", "when", when(r.time)));
+      li.appendChild(el("span", "what", r.detail || LABEL[r.status] || r.status));
+      list.appendChild(li);
+    });
+    box.appendChild(list);
+    c.appendChild(box);
+  }
+  return c;
+}
+function render() {
+  var banner = document.getElementById("banner"), summary = document.getElementById("summary"),
+      cards = document.getElementById("cards");
+  if (!latest) return;
+  var open = {};
+  cards.querySelectorAll("details").forEach(function (d, i) { open[i] = d.open; });
+  cards.textContent = "";
+  latest.automations.forEach(function (a) { cards.appendChild(card(a)); });
+  cards.querySelectorAll("details").forEach(function (d, i) { d.open = !!open[i]; });
+
+  var bad = latest.automations.filter(function (a) { return BAD[a.status]; });
+  var age = (Date.now() - new Date(latest.generated_at)) / 60000;
+  summary.textContent = "";
+  if (age > STALE_MIN) {
+    summary.appendChild(el("b", "", "Unknown right now."));
+    summary.appendChild(document.createTextNode(" Last report " + ago(latest.generated_at) + "."));
+    banner.textContent = "Benny-PC stopped reporting " + ago(latest.generated_at) +
+      ". It may be off, asleep or offline. The results below are from then, not now.";
+    banner.classList.add("on");
+  } else {
+    banner.classList.remove("on");
+    summary.appendChild(el("b", "", bad.length ? bad.length + " of " + latest.automations.length + " need attention."
+                                               : "No problems."));
+    summary.appendChild(document.createTextNode(" Updated " + ago(latest.generated_at) + "."));
+  }
+}
+function load() {
+  fetch(DATA_URL + "?t=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { latest = j; render(); })
+    .catch(function () {
+      if (latest) { render(); return; }
+      document.getElementById("summary").textContent = "Couldn't load the status. Trying again in a minute.";
+    });
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
