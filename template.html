@@ -109,7 +109,7 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
   <div id="homeView">
     <div class="boardwrap"><table class="board" id="board"></table></div>
     <div class="boardkey">
-      <span><b>Not sub</b> = not yet submitted (MC, MC PH1)</span>
+      <span><b>MC</b> = not yet submitted (MC, MC PH1)</span>
       <span><b>Sub</b> = submitted (SUB, PH1 SUB)</span>
       <span><b>App</b> = approved (APP-MC, PH1 APP)</span>
       <span><b>Den</b> = denied (REJ-MC, PH1 DEN)</span>
@@ -190,7 +190,7 @@ function seg(el, opts, key){
 }
 
 // One board cell: total plus the 8 status counts. No rows at all = that office/insurer pair is not tracked.
-const COLS = [["not","Not sub"],["sub","Sub"],["app","App"],["den","Den"]];
+const COLS = [["not","MC"],["sub","Sub"],["app","App"],["den","Den"]];
 function cell(rs, sum){
   const cls = sum?' class="sum"':"";
   if(!rs.length) return `<td class="nt">Not tracked</td>`;
