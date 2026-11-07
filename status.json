@@ -1,0 +1,116 @@
+{
+ "generated_at": "2026-11-07T06:20:01-05:00",
+ "automations": [
+  {
+   "id": "rob",
+   "name": "Rob",
+   "schedule": "Every 5 min, Sun\u2013Fri, 8:30 AM\u20136 PM",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-06T17:55:18-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-06T17:55:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T17:50:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T17:45:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T17:40:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T17:35:19-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "charts",
+   "name": "Unwritten Charts",
+   "schedule": "6 PM and 7 PM, Mon\u2013Thu",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-05T19:03:41-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-05T19:03:41-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-05T18:03:57-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-04T19:02:51-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-04T18:04:00-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-03T19:03:19-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "preauth",
+   "name": "Pre-Auth Dashboard",
+   "schedule": "9 AM, 1 PM and 6:30 PM, Sun\u2013Fri",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-06T18:34:12-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-06T18:34:12-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T13:04:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T11:44:13-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-06T09:04:24-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-05T20:21:53-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  }
+ ]
+}
