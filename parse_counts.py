@@ -24,7 +24,7 @@ def ins(h):
     if u.startswith('LIBERTY'): return 'Liberty Dental'
     return None
 
-cnt = collections.Counter(); old = nodate = other = liberty_hp_bp = pages_read = 0
+cnt = collections.Counter(); unmapped = collections.Counter(); old = nodate = other = liberty_hp_bp = pages_read = 0
 with pdfplumber.open(pdf_path) as pdf:
     for p in pdf.pages:
         ws = p.extract_words()
@@ -39,7 +39,8 @@ with pdfplumber.open(pdf_path) as pdf:
         for i, a in enumerate(anchors):
             nxt = anchors[i + 1]['top'] if i + 1 < len(anchors) else 1e9
             col = lambda x0, x1: ' '.join(w['text'] for w in sorted([w for w in ws if a['top'] - 2 <= w['top'] < nxt - 1 and x0 - 3 <= w['x0'] < x1], key=lambda w: (w['top'], w['x0'])))
-            st = ST.get(col(sx['x0'], sx['x0'] + 38)); of = OFF.get(col(ox['x0'], ox['x0'] + 35)); hm = ins(col(hx['x0'], hx['x0'] + 80))
+            st = ST.get(col(sx['x0'], sx['x0'] + 38)); raw_of = col(ox['x0'], ox['x0'] + 35); of = OFF.get(raw_of); hm = ins(col(hx['x0'], hx['x0'] + 80))
+            if st and not of: unmapped[(raw_of if re.fullmatch(r'[A-Z0-9-]{1,6}', raw_of) else '(not a code)', hm or 'other insurer')] += 1   # office codes only, for mapping new offices
             if not (st and of and hm): other += 1; continue
             m = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', col(cx['x0'] - 5, cx['x0'] + 45))
             if not m: nodate += 1; continue
@@ -50,6 +51,8 @@ with pdfplumber.open(pdf_path) as pdf:
 
 kept = sum(cnt.values())
 print(f"pages {pages_read} | cutoff {cutoff} | kept {kept} | older {old} | no date {nodate} | other office/ins/status {other} | Liberty at HP/BP skipped {liberty_hp_bp}")
+if unmapped:
+    print("Untracked office codes (code / insurer = rows, all dates): " + "; ".join(f"{o} / {i} = {n}" for (o, i), n in sorted(unmapped.items())))
 if pages_read == 0 or kept == 0:
     print("ERROR: nothing counted; export looks wrong. Not saving.")
     sys.exit(1)
