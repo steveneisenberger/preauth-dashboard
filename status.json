@@ -1,0 +1,153 @@
+{
+ "generated_at": "2026-11-14T17:00:01-05:00",
+ "automations": [
+  {
+   "id": "rob",
+   "name": "Rob",
+   "schedule": "Every 5 min, Sun\u2013Fri, 8:30 AM\u20136 PM",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-13T17:55:18-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-13T17:55:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-13T17:50:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-13T17:45:17-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-13T17:40:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-13T17:35:17-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "charts",
+   "name": "Unwritten Charts",
+   "schedule": "6 PM and 7 PM, Mon\u2013Thu",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-12T19:03:28-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-12T19:03:28-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-12T18:04:17-05:00",
+     "status": "failed",
+     "detail": "1 office failed"
+    },
+    {
+     "time": "2026-11-12T12:04:33-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-11T19:03:41-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-11T18:04:59-05:00",
+     "status": "failed",
+     "detail": "1 office failed"
+    }
+   ]
+  },
+  {
+   "id": "preauth",
+   "name": "Pre-Auth Dashboard",
+   "schedule": "9 AM, 1 PM and 6:30 PM, Sun\u2013Fri",
+   "status": "failed",
+   "detail": "Stopped before finishing",
+   "last_run": "2026-11-13T18:30:00-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-13T18:30:00-05:00",
+     "status": "failed",
+     "detail": "Stopped before finishing"
+    },
+    {
+     "time": "2026-11-13T13:12:06-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-13T09:27:50-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-12T21:12:13-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-12T21:00:35-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "recall",
+   "name": "APP-MC Recall",
+   "schedule": "11 AM daily",
+   "status": "failed",
+   "detail": "Run stopped with an error",
+   "last_run": "2026-11-14T11:00:07-05:00",
+   "today_runs": 1,
+   "today_failed": 1,
+   "runs": [
+    {
+     "time": "2026-11-14T11:00:07-05:00",
+     "status": "failed",
+     "detail": "Run stopped with an error"
+    },
+    {
+     "time": "2026-11-13T12:50:13-05:00",
+     "status": "test",
+     "detail": "Preview: 0 due, nothing sent"
+    },
+    {
+     "time": "2026-11-13T11:46:35-05:00",
+     "status": "test",
+     "detail": "Preview: 0 due, nothing sent"
+    },
+    {
+     "time": "2026-11-13T11:10:48-05:00",
+     "status": "failed",
+     "detail": "Run stopped with an error"
+    },
+    {
+     "time": "2026-11-12T11:09:26-05:00",
+     "status": "success",
+     "detail": "None due"
+    }
+   ]
+  }
+ ]
+}
