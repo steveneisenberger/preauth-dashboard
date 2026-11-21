@@ -1,0 +1,165 @@
+{
+ "generated_at": "2026-11-21T07:15:01-05:00",
+ "automations": [
+  {
+   "id": "rob",
+   "name": "Rob",
+   "schedule": "Every 5 min, Sun\u2013Fri, 8:30 AM\u20136 PM",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-20T17:50:18-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-20T17:50:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-20T17:40:19-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-20T17:30:19-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-20T17:20:18-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-20T17:10:20-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "charts",
+   "name": "Unwritten Charts",
+   "schedule": "6 PM and 7 PM, Mon\u2013Thu",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-19T19:03:10-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-19T19:03:10-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-19T18:04:01-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-19T12:04:27-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-18T19:02:58-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-18T18:03:58-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "preauth",
+   "name": "Pre-Auth Dashboard",
+   "schedule": "9 AM, 1 PM and 6:30 PM, Sun\u2013Fri",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-20T18:37:24-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-20T18:37:24-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-20T13:07:22-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-20T09:07:50-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-19T18:37:13-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-19T13:09:15-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "recall",
+   "name": "APP-MC Recall",
+   "schedule": "11 AM daily",
+   "status": "success",
+   "detail": "None due",
+   "last_run": "2026-11-20T11:01:37-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-20T11:01:37-05:00",
+     "status": "success",
+     "detail": "None due"
+    },
+    {
+     "time": "2026-11-19T11:01:39-05:00",
+     "status": "success",
+     "detail": "None due"
+    },
+    {
+     "time": "2026-11-18T11:02:26-05:00",
+     "status": "success",
+     "detail": "1 sent"
+    }
+   ]
+  },
+  {
+   "id": "hmo",
+   "name": "HMO Status Bot",
+   "schedule": "Nightly 7:30 PM\u20138:00 AM",
+   "status": "success",
+   "detail": "47 patients checked",
+   "last_run": "2026-11-18T20:04:00-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-18T20:04:00-05:00",
+     "status": "success",
+     "detail": "47 patients checked"
+    },
+    {
+     "time": "2026-11-18T19:35:00-05:00",
+     "status": "failed",
+     "detail": "Stopped at an unexpected portal screen, 1 patient checked"
+    }
+   ]
+  }
+ ]
+}
