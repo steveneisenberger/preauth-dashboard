@@ -1,0 +1,212 @@
+{
+ "generated_at": "2026-11-28T10:10:01-05:00",
+ "automations": [
+  {
+   "id": "rob",
+   "name": "Rob",
+   "schedule": "Every 5 min, Sun\u2013Fri, 8:30 AM\u20136 PM",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-27T17:50:23-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-27T17:50:23-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-27T17:40:24-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-27T17:30:24-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-27T17:20:24-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-27T17:10:23-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "charts",
+   "name": "Unwritten Charts",
+   "schedule": "6 PM and 7 PM, Mon\u2013Thu",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-26T19:03:53-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-26T19:03:53-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-26T18:03:48-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-26T12:03:45-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-25T19:06:03-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-25T18:06:29-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "preauth",
+   "name": "Pre-Auth Dashboard",
+   "schedule": "9 AM, 1 PM and 6:30 PM, Sun\u2013Fri",
+   "status": "success",
+   "detail": "",
+   "last_run": "2026-11-27T18:38:01-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-27T18:38:01-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-27T13:08:27-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-27T09:05:54-05:00",
+     "status": "failed",
+     "detail": "Update failed, nothing published"
+    },
+    {
+     "time": "2026-11-26T18:37:06-05:00",
+     "status": "success",
+     "detail": ""
+    },
+    {
+     "time": "2026-11-26T13:07:18-05:00",
+     "status": "success",
+     "detail": ""
+    }
+   ]
+  },
+  {
+   "id": "recall",
+   "name": "APP-MC Recall",
+   "schedule": "11 AM daily",
+   "status": "success",
+   "detail": "None due",
+   "last_run": "2026-11-27T11:01:55-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-27T11:01:55-05:00",
+     "status": "success",
+     "detail": "None due"
+    },
+    {
+     "time": "2026-11-26T11:01:52-05:00",
+     "status": "success",
+     "detail": "None due"
+    },
+    {
+     "time": "2026-11-25T11:01:57-05:00",
+     "status": "success",
+     "detail": "None due"
+    }
+   ]
+  },
+  {
+   "id": "hmo",
+   "name": "HMO Status Bot",
+   "schedule": "Nightly 7:30 PM\u20138:00 AM",
+   "status": "success",
+   "detail": "31 patients checked",
+   "last_run": "2026-11-26T19:41:00-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-26T19:41:00-05:00",
+     "status": "success",
+     "detail": "31 patients checked"
+    },
+    {
+     "time": "2026-11-26T16:08:00-05:00",
+     "status": "failed",
+     "detail": "Stopped before finishing"
+    },
+    {
+     "time": "2026-11-26T13:02:00-05:00",
+     "status": "failed",
+     "detail": "Stopped at a portal login, 0 patients checked"
+    },
+    {
+     "time": "2026-11-26T11:54:00-05:00",
+     "status": "failed",
+     "detail": "Stopped at a portal login, 0 patients checked"
+    },
+    {
+     "time": "2026-11-24T15:43:00-05:00",
+     "status": "success",
+     "detail": "47 patients checked"
+    }
+   ]
+  },
+  {
+   "id": "sched",
+   "name": "Tomorrow's Schedule (WhatsApp)",
+   "schedule": "3 PM daily",
+   "status": "success",
+   "detail": "Tomorrow's list sent to WhatsApp",
+   "last_run": "2026-11-27T15:02:28-05:00",
+   "today_runs": 0,
+   "today_failed": 0,
+   "runs": [
+    {
+     "time": "2026-11-27T15:02:28-05:00",
+     "status": "success",
+     "detail": "Tomorrow's list sent to WhatsApp"
+    },
+    {
+     "time": "2026-11-26T15:02:24-05:00",
+     "status": "success",
+     "detail": "Tomorrow's list sent to WhatsApp"
+    },
+    {
+     "time": "2026-11-25T15:08:47-05:00",
+     "status": "success",
+     "detail": "Tomorrow's list sent to WhatsApp"
+    },
+    {
+     "time": "2026-11-25T15:02:21-05:00",
+     "status": "failed",
+     "detail": "Run failed, details in the log on Benny-PC"
+    }
+   ]
+  }
+ ]
+}
